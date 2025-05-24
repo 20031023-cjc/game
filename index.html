@@ -1,15 +1,177 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ほしをあつめて！</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ほしをあつめて！</title>
+<link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap" rel="stylesheet" />
+<style>
+  /* 字体和背景 */
+  body {
+    margin: 0; padding: 0; overflow: hidden;
+    font-family: 'Kosugi Maru', sans-serif;
+    background: linear-gradient(to top, #0f2027, #203a43, #2c5364);
+    color: white;
+  }
+
+  /* 顶部游戏信息 */
+  .game-container {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 10;
+  }
+  .title {
+    font-size: 3em;
+    text-shadow: 0 0 10px gold;
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  .score {
+    font-size: 1.5em;
+    margin-top: 10px;
+  }
+  @keyframes glow {
+    from {
+      text-shadow: 0 0 5px gold;
+    }
+    to {
+      text-shadow: 0 0 20px gold, 0 0 30px orange;
+    }
+  }
+
+  /* 全屏画布 */
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    background: radial-gradient(ellipse at center, #1b2735 0%, #090a0f 100%);
+  }
+</style>
 </head>
 <body>
-  <div class="scoreboard">スコア：<span id="score">0</span></div>
-  <div class="game-area" id="gameArea"></div>
 
-  <script src="script.js"></script>
+<div class="game-container">
+  <h1 class="title">🌟 ほしをあつめて！ 🌟</h1>
+  <p class="score">スコア: <span id="score">0</span></p>
+</div>
+
+<canvas id="backgroundCanvas"></canvas>
+
+<script>
+  const canvas = document.getElementById("backgroundCanvas");
+  const ctx = canvas.getContext("2d");
+  let score = 0;
+  const scoreEl = document.getElementById("score");
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  class Star {
+    constructor() {
+      this.reset();
+    }
+
+    reset() {
+      this.x = Math.random() * canvas.width;
+      this.y = -20;
+      this.size = Math.random() * 18 + 7;
+      this.speed = Math.random() * 2 + 1 + score * 0.1; // 速度随分数加快
+      this.clicked = false;
+      this.color = `hsl(${Math.random() * 360}, 100%, 75%)`;
+      this.twinkle = Math.random() * 1000;
+    }
+
+    update(deltaTime) {
+      this.y += this.speed * (deltaTime / 16);
+      this.twinkle += deltaTime;
+      if (this.twinkle > 2000) this.twinkle = 0;
+      if (this.y > canvas.height + this.size) this.reset();
+    }
+
+    draw(ctx) {
+      // 画星星主体
+      const glow = 0.7 + 0.3 * Math.sin(this.twinkle / 200);
+      ctx.save();
+      ctx.beginPath();
+      const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+      gradient.addColorStop(0, `rgba(255, 255, 255, ${glow})`);
+      gradient.addColorStop(0.6, this.color);
+      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = gradient;
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 星光小闪
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.2 + 0.3 * glow})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(this.x - this.size * 1.5, this.y);
+      ctx.lineTo(this.x + this.size * 1.5, this.y);
+      ctx.moveTo(this.x, this.y - this.size * 1.5);
+      ctx.lineTo(this.x, this.y + this.size * 1.5);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    isClicked(mx, my) {
+      const dx = this.x - mx;
+      const dy = this.y - my;
+      return Math.sqrt(dx * dx + dy * dy) < this.size;
+    }
+  }
+
+  const stars = [];
+  function addStars(n) {
+    for (let i = 0; i < n; i++) stars.push(new Star());
+  }
+  addStars(25);
+
+  let lastTime = 0;
+  function animate(time = 0) {
+    const deltaTime = time - lastTime;
+    lastTime = time;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const star of stars) {
+      star.update(deltaTime);
+      star.draw(ctx);
+    }
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  canvas.addEventListener("click", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    for (const star of stars) {
+      if (!star.clicked && star.isClicked(mx, my)) {
+        star.clicked = true;
+        score++;
+        scoreEl.textContent = score;
+        star.reset();
+
+        // 随分数增加，提高星星数和速度
+        if (score % 10 === 0 && stars.length < 150) {
+          addStars(5);
+        }
+      }
+    }
+  });
+</script>
+
 </body>
 </html>
