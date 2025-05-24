@@ -1,89 +1,43 @@
-body {
-  margin: 0;
-  font-family: "Helvetica Neue", sans-serif;
-  background: linear-gradient(to top right, #1b1b2f, #162447);
-  color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  overflow: hidden;
+let score = 0;
+const scoreDisplay = document.getElementById('score');
+const gameArea = document.getElementById('gameArea');
+
+let spawnInterval = 1500; // 初始星星生成间隔（毫秒）
+
+function spawnStar() {
+  const star = document.createElement('div');
+  star.classList.add('star');
+
+  const size = Math.random() * 20 + 30; // 30px~50px
+  star.style.width = `${size}px`;
+  star.style.height = `${size}px`;
+
+  star.style.left = `${Math.random() * (window.innerWidth - 50)}px`;
+  star.style.animationDuration = `${Math.random() * 3 + 2}s`; // 2s~5s
+
+  // 点击星星
+  star.addEventListener('click', () => {
+    score++;
+    scoreDisplay.textContent = score;
+    star.remove();
+
+    // 提高游戏难度
+    if (score % 10 === 0 && spawnInterval > 300) {
+      spawnInterval -= 100;
+      clearInterval(spawnTimer);
+      spawnTimer = setInterval(spawnStar, spawnInterval);
+    }
+  });
+
+  gameArea.appendChild(star);
+
+  // 自动移除落到底部的星星
+  setTimeout(() => {
+    if (gameArea.contains(star)) {
+      star.remove();
+    }
+  }, 6000);
 }
 
-.container {
-  text-align: center;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-}
-
-.title {
-  font-size: 2.5rem;
-  margin-bottom: 10px;
-  animation: float 3s ease-in-out infinite;
-}
-
-.counter {
-  font-size: 1.2rem;
-  margin-bottom: 20px;
-}
-
-.star-area {
-  margin: 20px;
-}
-
-.star {
-  font-size: 60px;
-  cursor: pointer;
-  animation: twinkle 1s infinite alternate;
-  transition: transform 0.2s;
-}
-.star:hover {
-  transform: scale(1.3);
-}
-
-.upgrade-btn {
-  padding: 12px 20px;
-  font-size: 1rem;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(45deg, #ffafbd, #ffc3a0);
-  color: #2d2d2d;
-  cursor: pointer;
-  box-shadow: 0 0 12px #ffafbd;
-  transition: all 0.3s ease;
-}
-.upgrade-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 20px #ffc3a0;
-}
-
-.level-text {
-  margin-top: 10px;
-  font-size: 1rem;
-  color: #bbb;
-}
-
-@keyframes twinkle {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0.6;
-    transform: scale(1.1);
-  }
-}
-
-@keyframes float {
-  0% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-  100% {
-    transform: translateY(0px);
-  }
-}
+// 开始生成星星
+let spawnTimer = setInterval(spawnStar, spawnInterval);
