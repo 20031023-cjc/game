@@ -1,38 +1,54 @@
-let stars = 0;
-let autoLevel = 0;
-let upgradeCost = 10;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-const starsEl = document.getElementById('stars');
-const starEl = document.getElementById('star');
-const upgradeBtn = document.getElementById('upgradeBtn');
-const upgradeCostEl = document.getElementById('upgradeCost');
-const autoLevelEl = document.getElementById('autoLevel');
+body {
+  background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+  overflow: hidden;
+  font-family: 'Arial', sans-serif;
+}
 
-// 点击星星
-starEl.addEventListener('click', () => {
-  stars += 1;
-  updateStars();
-});
+.scoreboard {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 24px;
+  font-weight: bold;
+  z-index: 1000;
+}
 
-// 升级自动生成
-upgradeBtn.addEventListener('click', () => {
-  if (stars >= upgradeCost) {
-    stars -= upgradeCost;
-    autoLevel++;
-    upgradeCost = Math.floor(upgradeCost * 1.5);
-    autoLevelEl.textContent = autoLevel;
-    upgradeCostEl.textContent = upgradeCost;
-    updateStars();
+.game-area {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 星星样式 */
+.star {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background: url('https://upload.wikimedia.org/wikipedia/commons/1/18/Five-pointed_star.svg') no-repeat center center;
+  background-size: contain;
+  animation: fall linear;
+  cursor: pointer;
+}
+
+/* 星星下落动画 */
+@keyframes fall {
+  0% {
+    top: -50px;
+    opacity: 1;
+    transform: rotate(0deg);
   }
-});
-
-// 自动增加星星
-setInterval(() => {
-  stars += autoLevel;
-  updateStars();
-}, 1000);
-
-// 更新星星显示
-function updateStars() {
-  starsEl.textContent = stars;
+  100% {
+    top: 100vh;
+    opacity: 0.6;
+    transform: rotate(360deg);
+  }
 }
