@@ -4,172 +4,204 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>ほしをあつめて！</title>
-<link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap" rel="stylesheet" />
 <style>
-  /* 字体和背景 */
-  body {
-    margin: 0; padding: 0; overflow: hidden;
+  @import url('https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap');
+
+  body, html {
+    margin: 0; padding: 0; height: 100%;
+    background: radial-gradient(circle at bottom, #0a0038, #1b0048, #40007f);
     font-family: 'Kosugi Maru', sans-serif;
-    background: linear-gradient(to top, #0f2027, #203a43, #2c5364);
-    color: white;
+    overflow: hidden;
+    user-select: none;
   }
 
-  /* 顶部游戏信息 */
-  .game-container {
-    position: absolute;
-    top: 20px;
-    left: 50%;
+  .game-header {
+    position: fixed;
+    top: 15px; left: 50%;
     transform: translateX(-50%);
+    color: #fff;
     text-align: center;
-    z-index: 10;
+    z-index: 1000;
+    text-shadow: 0 0 8px #ffd700, 0 0 15px #ffea00;
   }
-  .title {
-    font-size: 3em;
-    text-shadow: 0 0 10px gold;
+  .game-header h1 {
+    font-size: 3rem;
+    margin: 0;
     animation: glow 2s ease-in-out infinite alternate;
   }
-  .score {
-    font-size: 1.5em;
-    margin-top: 10px;
-  }
-  @keyframes glow {
-    from {
-      text-shadow: 0 0 5px gold;
-    }
-    to {
-      text-shadow: 0 0 20px gold, 0 0 30px orange;
-    }
+  .game-header p {
+    margin: 5px 0 0;
+    font-size: 1.5rem;
   }
 
-  /* 全屏画布 */
-  canvas {
-    display: block;
+  @keyframes glow {
+    from { text-shadow: 0 0 6px #ffd700, 0 0 12px #ffea00; }
+    to { text-shadow: 0 0 18px #ffd700, 0 0 28px #ffea00; }
+  }
+
+  #starfield {
     position: fixed;
-    top: 0; left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 1;
-    background: radial-gradient(ellipse at center, #1b2735 0%, #090a0f 100%);
+    overflow: visible;
+    top: 0; left: 0;
+    pointer-events: none; /* 让动画星星不阻挡点击 */
   }
+
+  /* 星星容器 - 用来控制点击区域 */
+  .star {
+    position: absolute;
+    cursor: pointer;
+    pointer-events: auto; /* 允许点击 */
+    user-select: none;
+    transform-origin: center;
+    will-change: transform;
+  }
+
+  /* 星星动画 */
+  .star svg {
+    display: block;
+    width: 40px;
+    height: 40px;
+    filter: drop-shadow(0 0 5px #fff);
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  .star:nth-child(odd) svg {
+    animation-duration: 4s;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 10px #fff); }
+    50% { opacity: 0.6; transform: scale(1.1) rotate(15deg); filter: drop-shadow(0 0 20px #ffdd00); }
+  }
+
 </style>
 </head>
 <body>
 
-<div class="game-container">
-  <h1 class="title">🌟 ほしをあつめて！ 🌟</h1>
-  <p class="score">スコア: <span id="score">0</span></p>
+<div class="game-header">
+  <h1>🌟 ほしをあつめて！ 🌟</h1>
+  <p>スコア: <span id="score">0</span></p>
 </div>
 
-<canvas id="backgroundCanvas"></canvas>
+<div id="starfield"></div>
 
 <script>
-  const canvas = document.getElementById("backgroundCanvas");
-  const ctx = canvas.getContext("2d");
+  const starfield = document.getElementById('starfield');
+  const scoreEl = document.getElementById('score');
   let score = 0;
-  const scoreEl = document.getElementById("score");
+  let starsCount = 25;
+  let stars = [];
 
-  function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  window.addEventListener("resize", resize);
-  resize();
+  // SVG 星星路径（五角星）
+  const starSVG = `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <defs>
+    <radialGradient id="grad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff" />
+      <stop offset="70%" stop-color="#ffea00" />
+      <stop offset="100%" stop-color="#ff8c00" />
+    </radialGradient>
+  </defs>
+  <polygon points="32 5 39.09 24.26 59 24.26 42.36 38.74 48.45 58 32 43.52 15.55 58 21.64 38.74 5 24.26 24.91 24.26" fill="url(#grad)" stroke="#fff" stroke-width="1"/>
+  </svg>`;
 
-  class Star {
-    constructor() {
-      this.reset();
-    }
-
-    reset() {
-      this.x = Math.random() * canvas.width;
-      this.y = -20;
-      this.size = Math.random() * 18 + 7;
-      this.speed = Math.random() * 2 + 1 + score * 0.1; // 速度随分数加快
-      this.clicked = false;
-      this.color = `hsl(${Math.random() * 360}, 100%, 75%)`;
-      this.twinkle = Math.random() * 1000;
-    }
-
-    update(deltaTime) {
-      this.y += this.speed * (deltaTime / 16);
-      this.twinkle += deltaTime;
-      if (this.twinkle > 2000) this.twinkle = 0;
-      if (this.y > canvas.height + this.size) this.reset();
-    }
-
-    draw(ctx) {
-      // 画星星主体
-      const glow = 0.7 + 0.3 * Math.sin(this.twinkle / 200);
-      ctx.save();
-      ctx.beginPath();
-      const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
-      gradient.addColorStop(0, `rgba(255, 255, 255, ${glow})`);
-      gradient.addColorStop(0.6, this.color);
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-      ctx.fillStyle = gradient;
-      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      // 星光小闪
-      ctx.save();
-      ctx.strokeStyle = `rgba(255, 255, 255, ${0.2 + 0.3 * glow})`;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(this.x - this.size * 1.5, this.y);
-      ctx.lineTo(this.x + this.size * 1.5, this.y);
-      ctx.moveTo(this.x, this.y - this.size * 1.5);
-      ctx.lineTo(this.x, this.y + this.size * 1.5);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    isClicked(mx, my) {
-      const dx = this.x - mx;
-      const dy = this.y - my;
-      return Math.sqrt(dx * dx + dy * dy) < this.size;
-    }
+  function random(min, max) {
+    return Math.random() * (max - min) + min;
   }
 
-  const stars = [];
-  function addStars(n) {
-    for (let i = 0; i < n; i++) stars.push(new Star());
+  function createStar() {
+    const star = document.createElement('div');
+    star.classList.add('star');
+    star.innerHTML = starSVG;
+
+    // 设置初始位置和大小
+    star.style.left = random(0, window.innerWidth - 40) + 'px';
+    star.style.top = '-50px'; // 从屏幕上方开始掉落
+    star.style.width = random(30, 50) + 'px';
+    star.style.height = star.style.width;
+
+    // 自定义属性
+    star.speed = random(1, 3) + score * 0.1; // 下落速度，分数越高越快
+    star.clicked = false;
+
+    // 动画效果 - 轻微左右摆动
+    star.animate([
+      { transform: 'translateX(0)' },
+      { transform: `translateX(${random(-20, 20)}px)` },
+      { transform: 'translateX(0)' }
+    ], {
+      duration: random(3000, 6000),
+      iterations: Infinity,
+      easing: 'ease-in-out'
+    });
+
+    starfield.appendChild(star);
+    stars.push(star);
   }
-  addStars(25);
 
-  let lastTime = 0;
-  function animate(time = 0) {
-    const deltaTime = time - lastTime;
-    lastTime = time;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (const star of stars) {
-      star.update(deltaTime);
-      star.draw(ctx);
-    }
-
-    requestAnimationFrame(animate);
+  function resetStar(star) {
+    star.style.left = random(0, window.innerWidth - 40) + 'px';
+    star.style.top = '-50px';
+    star.speed = random(1, 3) + score * 0.1;
+    star.clicked = false;
   }
-  animate();
 
-  canvas.addEventListener("click", (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
+  function updateStars() {
+    stars.forEach(star => {
+      if (star.clicked) return;
+      let currentTop = parseFloat(star.style.top);
+      currentTop += star.speed;
+      if (currentTop > window.innerHeight) {
+        resetStar(star);
+      } else {
+        star.style.top = currentTop + 'px';
+      }
+    });
+    requestAnimationFrame(updateStars);
+  }
 
-    for (const star of stars) {
-      if (!star.clicked && star.isClicked(mx, my)) {
+  function onClick(e) {
+    const rect = starfield.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // 逆序检测，避免点击重叠星星时点不到上层
+    for (let i = stars.length - 1; i >= 0; i--) {
+      const star = stars[i];
+      if (star.clicked) continue;
+
+      // 点击范围扩大1.8倍，实际星星40px，点击区域大约72px
+      const starX = star.offsetLeft + 20; // 中心点x
+      const starY = star.offsetTop + 20;  // 中心点y
+      const dx = x - starX;
+      const dy = y - starY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 36) { // 36px半径，点大了点
         star.clicked = true;
         score++;
         scoreEl.textContent = score;
-        star.reset();
+        resetStar(star);
 
-        // 随分数增加，提高星星数和速度
+        // 每10分加5颗星，最多150颗
         if (score % 10 === 0 && stars.length < 150) {
-          addStars(5);
+          for(let j=0;j<5;j++) createStar();
         }
+        break;
       }
     }
+  }
+
+  // 初始化星星
+  for(let i=0; i<starsCount; i++) {
+    createStar();
+  }
+
+  updateStars();
+
+  starfield.addEventListener('click', onClick);
+
+  window.addEventListener('resize', () => {
+    // 窗口变动时防止星星超出视口，重置所有星星位置
+    stars.forEach(resetStar);
   });
 </script>
 
