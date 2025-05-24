@@ -2,24 +2,13 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ほしをあつめて！</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1 class="title">🌟 ほしをあつめて！🌟</h1>
-    <p class="counter">あなたの星：<span id="stars">0</span> 個</p>
-
-    <div class="star-area">
-      <div id="star" class="star">⭐</div>
-    </div>
-
-    <button id="upgradeBtn" class="upgrade-btn">
-      自動星生成をアップグレード（<span id="upgradeCost">10</span>）
-    </button>
-    <p class="level-text">オートレベル：<span id="autoLevel">0</span></p>
-  </div>
+  <div class="scoreboard">スコア：<span id="score">0</span></div>
+  <div class="game-area" id="gameArea"></div>
 
   <script src="script.js"></script>
 </body>
